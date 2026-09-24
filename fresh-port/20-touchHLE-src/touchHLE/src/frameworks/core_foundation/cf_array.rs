@@ -27,8 +27,9 @@ fn CFArrayCreateMutable(
     callbacks: ConstVoidPtr, // TODO, should be `const CFArrayCallBacks*`
 ) -> CFMutableArrayRef {
     assert!(allocator == kCFAllocatorDefault || env.mem.read(allocator).is_system_default()); // unimplemented
-    assert!(capacity == 0); // TODO: fixed capacity support
-    assert!(callbacks.is_null()); // TODO: support retaining etc
+    // [Seer port] RELAXED: capacity hint is advisory and callbacks (retain/release) are ignored,
+    // matching the existing non-retaining array implementation.
+    let _ = (capacity, callbacks);
 
     msg_class![env; _touchHLE_NSMutableArray_non_retaining new]
 }

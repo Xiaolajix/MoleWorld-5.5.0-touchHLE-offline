@@ -50,6 +50,45 @@ pub struct State {
     localization_tables: HashMap<id, id>, // NSString* to NSDictionary*
 }
 
+/// Load (or reuse the cached) localization table `name` from a bundle.
+/// The cache is only meaningful for the main bundle, whose tables are keyed by
+/// table name in framework state; sub-bundles are looked up on every call.
+/// [Seer port] supports arbitrary bundles instead of asserting main-only.
+fn localization_table_for(env: &mut Environment, bundle: id, name: id, use_cache: bool) -> id {
+    if use_cache {
+        if let Some(&dict) = env.framework_state.foundation.ns_bundle.localization_tables.get(&name)
+        {
+            return dict;
+        }
+    }
+    let extension = ns_string::get_static_str(env, "strings");
+    let dict_url: id = msg![env; bundle URLForResource:name withExtension:extension];
+    let dict = if dict_url == nil {
+        crate::log!(
+            "Warning: Unable to locate localization table named '{}'",
+            to_rust_string(env, name)
+        );
+        nil
+    } else {
+        let dict: id = msg_class![env; NSDictionary dictionaryWithContentsOfURL:dict_url];
+        if dict == nil {
+            crate::log!(
+                "Warning: Localization table '{}' exists but could not be parsed",
+                to_rust_string(env, name)
+            );
+        }
+        dict
+    };
+    if use_cache {
+        retain(env, name);
+        if dict != nil {
+            retain(env, dict);
+        }
+        env.framework_state.foundation.ns_bundle.localization_tables.insert(name, dict);
+    }
+    dict
+}
+
 pub struct NSBundleHostObject {
     /// If this is [None], this is the main bundle's NSBundle instance and the
     /// [Bundle] is stored in [crate::Environment], not here.
@@ -294,27 +333,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     } else {
         table_name
     };
-    // TODO: support arbitrary bundles, not only main one
-    assert_eq!(this, env.framework_state.foundation.ns_bundle.main_bundle.unwrap());
-    let dict = if let Some(&table_dict) = env.framework_state.foundation.ns_bundle.localization_tables.get(&name) {
-        table_dict
-    } else {
-        let extension = ns_string::get_static_str(env, "strings");
-        let dict_url: id = msg![env; this URLForResource:name withExtension:extension];
-        if dict_url == nil {
-            log!("Warning: Unable to locate localization table named '{}', caching as nil", to_rust_string(env, name));
-            retain(env, name);
-            env.framework_state.foundation.ns_bundle.localization_tables.insert(name, nil);
-            nil
-        } else {
-            let dict: id = msg_class![env; NSDictionary dictionaryWithContentsOfURL:dict_url];
-            assert!(dict != nil);
-            retain(env, name);
-            retain(env, dict);
-            env.framework_state.foundation.ns_bundle.localization_tables.insert(name, dict);
-            dict
-        }
-    };
+    // [Seer port] was: assert_eq!(this, main_bundle) — sub-bundles are now supported
+    let main_is_this = env.framework_state.foundation.ns_bundle.main_bundle == Some(this);
+    let dict = localization_table_for(env, this, name, main_is_this);
     let res: id = msg![env; dict objectForKey:key];
     if res == nil {
         if value == nil || msg![env; value isEqualToString:empty_str] {

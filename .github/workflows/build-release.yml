@@ -87,12 +87,17 @@ jobs:
       # CARGO_TARGET_DIR 设到极短路径 C:\t:否则 sdl2-sys 的 CMake TryCompile 在
       # 我们的深层子目录 + 长仓库名下会超过 Windows 260 字符路径上限,导致
       # FileTracker FTK1011 / “compiler is broken”。短 target dir 是标准修法。
+      # [Seer port] Runner images dropped VS2022 and vendored cmake 3.31.6 can't name
+      # VS2026; build SDL with Ninja against MSVC dev prompt instead.
+      - name: MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build (release)
         working-directory: fresh-port/20-touchHLE-src/touchHLE
         run: cargo build --release
         env:
           CMAKE: ${{ github.workspace }}\fresh-port\20-touchHLE-src\touchHLE\vendor\cmake\bin\cmake.exe
-          CMAKE_GENERATOR: Visual Studio 17 2022
+          CMAKE_GENERATOR: Ninja
           CARGO_TARGET_DIR: C:\t
 
       # 打包:touchHLE 资源 + 内置游戏(MoleWorld.app)+ 双击启动器。

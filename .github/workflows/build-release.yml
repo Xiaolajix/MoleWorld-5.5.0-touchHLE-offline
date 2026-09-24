@@ -1,3 +1,4 @@
+# [Seer port] workflow touched to force GitHub registration
 name: Build Release (Windows / Linux / Android / macOS)
 
 # 推送 v* tag(如 v5.5.0)触发,把各平台 touchHLE 构建产物上传到该 tag 的 Release。

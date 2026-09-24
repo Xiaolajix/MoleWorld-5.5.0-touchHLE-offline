@@ -1,4 +1,3 @@
-# [Seer port] workflow touched to force GitHub registration
 name: Build Release (Windows / Linux / Android / macOS)
 
 # 推送 v* tag(如 v5.5.0)触发,把各平台 touchHLE 构建产物上传到该 tag 的 Release。
@@ -93,6 +92,7 @@ jobs:
         run: cargo build --release
         env:
           CMAKE: ${{ github.workspace }}\fresh-port\20-touchHLE-src\touchHLE\vendor\cmake\bin\cmake.exe
+          CMAKE_GENERATOR: Visual Studio 17 2022
           CARGO_TARGET_DIR: C:\t
 
       # 打包:touchHLE 资源 + 内置游戏(MoleWorld.app)+ 双击启动器。

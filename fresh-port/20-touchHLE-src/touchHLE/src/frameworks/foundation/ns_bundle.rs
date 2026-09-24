@@ -64,7 +64,7 @@ fn localization_table_for(env: &mut Environment, bundle: id, name: id, use_cache
     let extension = ns_string::get_static_str(env, "strings");
     let dict_url: id = msg![env; bundle URLForResource:name withExtension:extension];
     let dict = if dict_url == nil {
-        crate::log!(
+        log!(
             "Warning: Unable to locate localization table named '{}'",
             to_rust_string(env, name)
         );
@@ -72,7 +72,7 @@ fn localization_table_for(env: &mut Environment, bundle: id, name: id, use_cache
     } else {
         let dict: id = msg_class![env; NSDictionary dictionaryWithContentsOfURL:dict_url];
         if dict == nil {
-            crate::log!(
+            log!(
                 "Warning: Localization table '{}' exists but could not be parsed",
                 to_rust_string(env, name)
             );
